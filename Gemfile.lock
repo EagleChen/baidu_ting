@@ -1,0 +1,10 @@
+GEM
+  remote: http://ruby.taobao.org/
+  specs:
+    nokogiri (1.5.2-x86-mingw32)
+
+PLATFORMS
+  x86-mingw32
+
+DEPENDENCIES
+  nokogiri

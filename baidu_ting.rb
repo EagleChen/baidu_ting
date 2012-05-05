@@ -1,5 +1,8 @@
-require 'open-uri'
-require 'nokogiri'
+require "rubygems"
+require "bundler/setup"
+
+require "open-uri"
+require "nokogiri"
 
 BASE_URL = 'http://ting.baidu.com'
 BASE_FOLDER = '.'
