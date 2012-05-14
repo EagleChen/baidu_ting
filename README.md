@@ -1,10 +1,10 @@
 baidu-ting
-Download all the songs in an album from http://ting.baidu.com. Code in ruby.
+Download all the songs in an album from http://ting.baidu.com. Written in ruby.
 
 Prerequisite:
-1. change the base folder
-change "BASE_FOLDER" to the folder where you want to download the album, e.g. "C:" or "/tmp/". default is the folder where source code resides.
+#install all the gems
+bundle install
 
 How to use:
-ruby baidu_ting.rb album_url 
+ruby baidu_ting.rb album_url -d directory_to_store_the_album -b the_url_of_baidu_ting
 "album_url" should be replaced by the album address, e.g. "http://ting.baidu.com/album/13947931" without quotes
