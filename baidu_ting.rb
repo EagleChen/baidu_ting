@@ -1,19 +1,41 @@
+#!/usr/bin/env ruby
 require "rubygems"
 require "bundler/setup"
 
+require "optparse"
 require "open-uri"
 require "nokogiri"
+require "fileutils"
 
-BASE_URL = 'http://ting.baidu.com'
-BASE_FOLDER = '.'
+options = {}
+opts_parser = OptionParser.new do |opts|
+  opts.banner = "Usage: baidu_ting.rb <album_url> [-d DIRECTORY] [-b BASEURL]"
+
+  opts.on('-d DIRECTORY') { |dir| options[:dir] = dir }
+  opts.on('-b BASEURL') { |baseurl| options[:baseurl] = baseurl }
+  opts.on('-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
+   end
+end
+album_url, = opts_parser.parse!
+usage unless album_url
+puts album_url
+BASE_URL = options[:baseurl] || "http://ting.baidu.com"
+BASE_FOLDER = options[:dir] || "."
+
+
+def usage
+  puts "Usage: baidu_ting.rb <album_url> [-d DIRECTORY] [-b BASEURL]"; exit 
+end
 
 def create_album_folder(name)
   begin
-    Dir.chdir(BASE_FOLDER)
-    Dir.mkdir(name)
-    Dir.chdir(BASE_FOLDER + '/' + name)
+    dir = File.join(BASE_FOLDER, name) 
+    FileUtils.mkdir_p(dir)
+    Dir.chdir(dir)
   rescue 
-    raise "Can't handle directory #{title}"
+    raise "Can't handle directory #{dir}"
   end
 end
 
@@ -53,5 +75,4 @@ def get_song(url, name)
     file.write(open(BASE_URL + path).read)
   end
 end
-
-download_album(ARGV[0])
+download_album(album_url)
