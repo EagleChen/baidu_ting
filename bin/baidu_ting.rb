@@ -9,7 +9,7 @@ $:.unshift(File.join(File.dirname(__FILE__), "../lib"))
 require "baidu_ting"
 
 def usage
-  puts "Usage: ruby bin/baidu_ting.rb <album_url> [-d DIRECTORY]"; exit 
+  puts "Usage: ruby bin/baidu_ting.rb <album_url> [-d DIRECTORY]"; exit
 end
 
 options = {}
@@ -20,7 +20,7 @@ opts_parser = OptionParser.new do |opts|
   opts.on('-h', '--help', 'Display this screen' ) do
     puts opts
     exit
-   end
+  end
 end
 album_url, = opts_parser.parse!
 usage unless album_url
@@ -31,10 +31,10 @@ CONCURRENCY = 5
 def create_album_folder(name)
   name.gsub!(/^\.+/, "")
   begin
-    dir = File.join(BASE_FOLDER, name) 
+    dir = File.join(BASE_FOLDER, name)
     FileUtils.mkdir_p(dir)
     Dir.chdir(dir)
-  rescue 
+  rescue
     raise "Can't handle directory #{dir}"
   end
 end
@@ -51,7 +51,7 @@ def download_album(album_url)
     EM.threadpool_size = CONCURRENCY
     result[:songs].each do |name, url|
       EM.defer(
-        proc do 
+        proc do
           data = ting.download_song(name, url)
           open(name + ".mp3", "wb") do |file|
             file.write(data)

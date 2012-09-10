@@ -26,7 +26,7 @@ class BaiduTing
   end
 
   def download_song(name, url)
-    get_page(url, name) 
+    get_page(url, name)
   end
 
   def get_page(url, update_key = nil)
@@ -38,7 +38,12 @@ class BaiduTing
                total_len = len
              end
            end,
+<<<<<<< HEAD
            :progress_proc => lambda { |s| @download_status[update_key] = s * 100 / total_len })
+=======
+           :progress_proc => lambda { |s| @download_status[update_key] = s * 100 / total_len }
+          ) { |f| f.read }
+>>>>>>> update for baidu ting's new version
     else
       open(url)
     end
