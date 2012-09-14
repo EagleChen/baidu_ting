@@ -38,12 +38,8 @@ class BaiduTing
                total_len = len
              end
            end,
-<<<<<<< HEAD
-           :progress_proc => lambda { |s| @download_status[update_key] = s * 100 / total_len })
-=======
            :progress_proc => lambda { |s| @download_status[update_key] = s * 100 / total_len }
           ) { |f| f.read }
->>>>>>> update for baidu ting's new version
     else
       open(url)
     end
