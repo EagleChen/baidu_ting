@@ -6,6 +6,8 @@ require "bundler/setup"
 require "optparse"
 require "fileutils"
 require "eventmachine"
+require "timeout"
+
 $:.unshift(File.join(File.dirname(__FILE__), "../lib"))
 require "baidu_ting"
 
@@ -25,8 +27,11 @@ opts_parser = OptionParser.new do |opts|
 end
 album_url, = opts_parser.parse!
 usage unless album_url
+
 BASE_FOLDER = options[:dir] || "#{Dir.home}/Music/downloads/"
 CONCURRENCY = 5
+MAX_RETRIES = 3
+DEFAULT_DOWNLOAD_TIMEOUT = 30
 
 def create_album_folder(name)
   name.gsub!(/^\.+/, "")
@@ -39,8 +44,10 @@ def create_album_folder(name)
   end
 end
 
+
 def download_album(album_url)
-  puts "begin"
+  puts "started to download..."
+  summary = ""
 
   ting = BaiduTing.new
   result = ting.song_list(album_url)
@@ -52,9 +59,21 @@ def download_album(album_url)
     result[:songs].each do |name, url|
       EM.defer(
         proc do
-          data = ting.download_song(name, url)
-          open(name + ".mp3", "wb") do |file|
-            file.write(data)
+          retries = MAX_RETRIES
+          begin
+            Timeout::timeout(DEFAULT_DOWNLOAD_TIMEOUT) do
+              data = ting.download_song(name, url)
+              open(name + ".mp3", "wb") do |file|
+                file.write(data)
+              end
+            end
+          rescue => e
+            if retries >= 0
+              retries -= 1
+              retry
+            else
+              summary <<  "could not download song #{name}"
+            end
           end
         end,
         proc do
@@ -63,6 +82,7 @@ def download_album(album_url)
             EM.stop
             progress(ting)
             puts "Download finished!"
+            puts "Download summary: #{summary}"
           end
         end)
     end
