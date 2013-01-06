@@ -22,13 +22,14 @@ class BaiduTing
     #get title and song path
     title = page_content.xpath(TITLE_PATH)[0].text.strip
     songs = page_content.xpath(SONGS_PATH)
+
     @download_status = {}
     songs.each {|song| @download_status[song.text.strip] = 0}
     song_titles = songs.collect {|song| song.text.strip}
     song_urls = songs.collect {|song| song_url(song["href"])}
 
-    {title: title,
-     songs: Hash[songs.collect {|n| [n.text.strip, song_url(n["href"])]}]}
+    {:title => title,
+     :songs => Hash[song_titles.zip(song_urls)]}
   end
 
   def download_song(name, url)
