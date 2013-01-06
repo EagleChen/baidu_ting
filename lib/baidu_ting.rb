@@ -8,6 +8,9 @@ class BaiduTing
   attr_accessor :download_status
 
   def song_url(href)
+    # should exclude non-mp3 songs
+    return nil unless href.include? "song"
+
     url = "#{BASE_URL}#{href}/download"
     page_content = Nokogiri::HTML(get_page(url))
     BASE_URL + page_content.xpath('//a[@id="download"]')[0]["href"]
@@ -15,12 +18,15 @@ class BaiduTing
 
   def song_list(url)
     page_content = Nokogiri::HTML(get_page(url))
-    #get title
-    title = page_content.xpath(TITLE_PATH)[0].text.strip
 
+    #get title and song path
+    title = page_content.xpath(TITLE_PATH)[0].text.strip
     songs = page_content.xpath(SONGS_PATH)
     @download_status = {}
     songs.each {|song| @download_status[song.text.strip] = 0}
+    song_titles = songs.collect {|song| song.text.strip}
+    song_urls = songs.collect {|song| song_url(song["href"])}
+
     {title: title,
      songs: Hash[songs.collect {|n| [n.text.strip, song_url(n["href"])]}]}
   end

@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+
 require "rubygems"
 require "bundler/setup"
 
@@ -24,7 +25,6 @@ opts_parser = OptionParser.new do |opts|
 end
 album_url, = opts_parser.parse!
 usage unless album_url
-puts album_url
 BASE_FOLDER = options[:dir] || "#{Dir.home}/Music/downloads/"
 CONCURRENCY = 5
 
