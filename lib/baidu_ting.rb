@@ -39,6 +39,7 @@ class BaiduTing
   def get_page(url, update_key = nil)
     if update_key
       total_len = 0
+      url = URI.parse(URI.encode(url))
       open(url,
            :content_length_proc => lambda do |len|
              if len && 0 < len
