@@ -9,14 +9,16 @@ $:.unshift(File.join(File.dirname(__FILE__), "../lib"))
 require "baidu_ting"
 
 def usage
-  puts "Usage: ruby bin/baidu_ting.rb <album_url> [-d DIRECTORY]"; exit
+  puts "Usage: ruby bin/baidu_ting.rb <album_url> [-d DIRECTORY] [-c CONFIG_FILE]"; exit
 end
 
-options = {}
+options = {dir: "#{Dir.home}/Music/downloads/",
+           config: File.join(File.expand_path(File.dirname(__FILE__)), "..", "config.yml") }
 opts_parser = OptionParser.new do |opts|
-  opts.banner = "Usage: ruby bin/baidu_ting.rb <album_url> [-d DIRECTORY]"
+  opts.banner = "Usage: ruby bin/baidu_ting.rb <album_url> [-d DIRECTORY] [-c CONFIG_FILE]"
 
-  opts.on('-d DIRECTORY') { |dir| options[:dir] = dir }
+  opts.on('-d DIRECTORY', 'music directory') { |dir| options[:dir] = dir }
+  opts.on('-c CONFIG_FILE', 'config file in yaml') { |config| options[:config] = config }
   opts.on('-h', '--help', 'Display this screen' ) do
     puts opts
     exit
@@ -24,14 +26,13 @@ opts_parser = OptionParser.new do |opts|
 end
 album_url, = opts_parser.parse!
 usage unless album_url
-puts album_url
-BASE_FOLDER = options[:dir] || "#{Dir.home}/Music/downloads/"
 CONCURRENCY = 5
+MAX_RETRIES = 3
 
-def create_album_folder(name)
+def create_album_folder(name, base)
   name.gsub!(/^\.+/, "")
   begin
-    dir = File.join(BASE_FOLDER, name)
+    dir = File.join(base, name)
     FileUtils.mkdir_p(dir)
     Dir.chdir(dir)
   rescue
@@ -39,12 +40,26 @@ def create_album_folder(name)
   end
 end
 
-def download_album(album_url)
-  puts "begin"
+def get_credential(config)
+  begin
+    puts File.exist?(config)
+    credential = YAML.load_file(config)
+  rescue
+    puts "Can not parse config file #{config}." +
+    "Check the path and make sure it's in yaml format"
+    exit
+  end
+  [credential["user"], credential["password"]]
+end
 
-  ting = BaiduTing.new
+def download_album(album_url, options)
+  puts "begin"
+  user, passwd = get_credential(options[:config])
+
+  ting = BaiduTing.new(user, passwd)
   result = ting.song_list(album_url)
-  create_album_folder(result[:title])
+
+  create_album_folder(result[:title], options[:dir])
   size = result[:songs].size
 
   EM.run do
@@ -52,9 +67,15 @@ def download_album(album_url)
     result[:songs].each do |name, url|
       EM.defer(
         proc do
-          data = ting.download_song(name, url)
-          open(name + ".mp3", "wb") do |file|
-            file.write(data)
+          retries = MAX_RETRIES
+          begin
+            data = ting.download_song(name, url)
+            open(name + ".mp3", "wb") do |file|
+              file.write(data)
+            end
+          rescue
+            retires -= 1
+            retires >= 0 ? retry : ting.download_status[name] = 0
           end
         end,
         proc do
@@ -77,4 +98,4 @@ def progress(ting)
   ting.download_status.each {|k, v| printf "%-50s\t%3d%%\n", k, v}
 end
 
-download_album(album_url)
+download_album(album_url, options)
