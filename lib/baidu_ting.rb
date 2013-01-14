@@ -51,9 +51,16 @@ class BaiduTing
   def song_url(href)
     url = "#{BASE_URL}#{href}/download"
     @agent.get(url) do |page|
-      data = page.parser.xpath(FINAL_PATH).first["data-data"]
-      matcher = data.match(/"link":"(.*)"/)
-      path = matcher[1].gsub("\\/", "/")
+      #default low definition music
+      path = page.link_with(:id => "download").attributes["href"]
+
+      #find high definition music
+      node = page.parser.xpath(FINAL_PATH).first
+      if node
+        data = node["data-data"]
+        matcher = data.match(/"link":"(.*)"/)
+        path = matcher[1].gsub("\\/", "/")
+      end
       return BASE_URL + path
     end
   end
