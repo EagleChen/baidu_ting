@@ -42,7 +42,6 @@ end
 
 def get_credential(config)
   begin
-    puts File.exist?(config)
     credential = YAML.load_file(config)
   rescue
     puts "Can not parse config file #{config}." +
