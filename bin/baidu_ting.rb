@@ -1,10 +1,13 @@
 #!/usr/bin/env ruby
+
 require "rubygems"
 require "bundler/setup"
 
 require "optparse"
 require "fileutils"
 require "eventmachine"
+require "timeout"
+
 $:.unshift(File.join(File.dirname(__FILE__), "../lib"))
 require "baidu_ting"
 
@@ -12,8 +15,11 @@ def usage
   puts "Usage: ruby bin/baidu_ting.rb <album_url> [-d DIRECTORY] [-c CONFIG_FILE]"; exit
 end
 
-options = {dir: "#{Dir.home}/Music/downloads/",
-           config: File.join(File.expand_path(File.dirname(__FILE__)), "..", "config.yml") }
+options = {
+  :dir    => "#{Dir.home}/Music/downloads/",
+  :config => File.join(File.expand_path(File.dirname(__FILE__)), "..", "config.yml")
+}
+
 opts_parser = OptionParser.new do |opts|
   opts.banner = "Usage: ruby bin/baidu_ting.rb <album_url> [-d DIRECTORY] [-c CONFIG_FILE]"
 
@@ -24,10 +30,14 @@ opts_parser = OptionParser.new do |opts|
     exit
   end
 end
+
 album_url, = opts_parser.parse!
 usage unless album_url
+
+BASE_FOLDER = options[:dir] || "#{Dir.home}/Music/downloads/"
 CONCURRENCY = 5
 MAX_RETRIES = 3
+DEFAULT_DOWNLOAD_TIMEOUT = 180
 
 def create_album_folder(name, base)
   name.gsub!(/^\.+/, "")
@@ -52,7 +62,8 @@ def get_credential(config)
 end
 
 def download_album(album_url, options)
-  puts "begin"
+  puts "started to download..."
+  summary = ""
   user, passwd = get_credential(options[:config])
 
   ting = BaiduTing.new(user, passwd)
@@ -68,13 +79,20 @@ def download_album(album_url, options)
         proc do
           retries = MAX_RETRIES
           begin
-            data = ting.download_song(name, url)
-            open(name + ".mp3", "wb") do |file|
-              file.write(data)
+            Timeout::timeout(DEFAULT_DOWNLOAD_TIMEOUT) do
+              data = ting.download_song(name, url)
+              open(name + ".mp3", "wb") do |file|
+                file.write(data)
+              end
             end
           rescue
-            retires -= 1
-            retires >= 0 ? retry : ting.download_status[name] = 0
+            if retries >= 0
+              retries -= 1
+              retry
+            else
+              ting.download_status[name] = 0
+              summary << "could not download song: #{name}"
+            end
           end
         end,
         proc do
@@ -83,6 +101,7 @@ def download_album(album_url, options)
             EM.stop
             progress(ting)
             puts "Download finished!"
+            puts "Download summary: #{summary.empty? ? 'all songs successfully downloaded':summary}"
           end
         end)
     end
