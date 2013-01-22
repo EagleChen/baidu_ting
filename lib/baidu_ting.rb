@@ -74,23 +74,23 @@ class BaiduTing
       puts "Login failed"
       exit
     end
-    title = songs = nil
-    puts url
 
+    title = songs = nil
     @agent.get(URI.parse(url)) do |page|
-      parser = page.parser
-      puts parser
-      title = parser.xpath(TITLE_PATH).first.text.strip
-      songs = parser.xpath(SONGS_PATH).select { |n| !n.text.strip.empty? }
+      page_content = page.parser
+
+      #get title and song path
+      title = page_content.xpath(TITLE_PATH)[0].text.strip
+      songs = page_content.xpath(SONGS_PATH).select { |n| !n.text.strip.empty? }
     end
 
     @download_status = {}
     songs.each {|song| @download_status[song.text.strip] = 0}
-    puts songs.inspect
-    results = {title: title,
-     songs: Hash[songs.map {|n| [n.text.strip, song_url(n["href"])]}]}
-    puts results
-    results
+    song_titles = songs.collect {|song| song.text.strip}
+    song_urls = songs.collect {|song| song_url(song["href"])}
+
+    {:title => title,
+     :songs => Hash[song_titles.zip(song_urls)]}
   end
 
   def download_song(name, url)
